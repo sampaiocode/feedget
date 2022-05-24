@@ -1,9 +1,11 @@
-import { ArrowLeft } from "phosphor-react";
-import { FormEvent, useState } from "react";
-import { FeedbackType, feedbackOptions } from "..";
+import { ArrowLeft } from 'phosphor-react';
+import { FormEvent, useState } from 'react';
+import { FeedbackType, feedbackOptions } from '..';
+import { api } from '../../../lib/api';
 
-import { CloseButton } from "../../CloseButton";
-import { ScreenshotButton } from "../ScreenshotButton";
+import { CloseButton } from '../../CloseButton';
+import { Loading } from '../../Loading';
+import { ScreenshotButton } from '../ScreenshotButton';
 
 interface FeedbackContentStepProps {
   feedbackType: FeedbackType;
@@ -11,32 +13,42 @@ interface FeedbackContentStepProps {
   onFeedbackSent: () => void;
 }
 
-export function FeedbackContentStep({ 
+export function FeedbackContentStep({
   feedbackType,
   onResetFeedbackRequested,
   onFeedbackSent
 }: FeedbackContentStepProps) {
-  const feedbackTypeInfo = feedbackOptions[feedbackType]
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [comment, setComment] = useState('');
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
 
-  const [screenshot, setScreenshot] = useState<string | null>(null)
-  const [commet, setComment] = useState('')
+  const feedbackTypeInfo = feedbackOptions[feedbackType];
 
-  function handleSubmitFeedback(event: FormEvent) {
-    event.preventDefault()
+  async function handleSubmitFeedback(event: FormEvent) {
+    event.preventDefault();
 
-    console.log(
-      commet,
+    setIsSendingFeedback(true);
+
+    // console.log(
+    //   commet,
+    //   screenshot
+    // );
+
+    await api.post('/feedbacks', {
+      type: feedbackType,
+      comment,
       screenshot
-    );
+    });
 
-    onFeedbackSent()
-  } 
+    setIsSendingFeedback(false);
+    onFeedbackSent();
+  }
 
   return (
     <>
       <header>
-        <button 
-          type="button" 
+        <button
+          type="button"
           className="text-zinc-400 hover:text-zinc-100 absolute top-5 left-5"
           onClick={onResetFeedbackRequested}
         >
@@ -44,10 +56,14 @@ export function FeedbackContentStep({
         </button>
 
         <span className="text-xl leading-6 flex items-center gap-2">
-          <img src={feedbackTypeInfo.image.source} alt={feedbackTypeInfo.image.alt} className="w-6 h-6" />
+          <img
+            src={feedbackTypeInfo.image.source}
+            alt={feedbackTypeInfo.image.alt}
+            className="w-6 h-6"
+          />
           {feedbackTypeInfo.title}
         </span>
-        
+
         <CloseButton />
       </header>
 
@@ -63,13 +79,13 @@ export function FeedbackContentStep({
 
           <button
             type="submit"
-            className="bg-brand-500 text-zinc-100 p-2 rounded-md flex-1 justify-center items-center text-sm border-transparent hover:bg-brand-300 transition-colors outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-brand-500"
-            disabled={commet.length === 0}
+            className="bg-brand-500 text-zinc-100 p-2 rounded-md flex-1 flex justify-center items-center text-sm border-transparent hover:bg-brand-300 transition-colors outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-brand-500"
+            disabled={comment.length === 0 || isSendingFeedback}
           >
-            Enviar feedback
+            {isSendingFeedback ? <Loading /> : 'Enviar feedback'}
           </button>
         </footer>
       </form>
     </>
-  )
+  );
 }
